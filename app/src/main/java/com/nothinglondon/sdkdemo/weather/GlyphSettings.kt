@@ -11,6 +11,27 @@ enum class AnimationStyle(val title: String) {
     INSTANT("Без анимации"), FADE("Затухание"), BLINK("Мигание"), SLIDE("Сдвиг")
 }
 
+enum class WeatherAnimationPreset(
+    val title: String,
+    val weatherCode: Int,
+    val isDay: Boolean,
+    val cloudCover: Int
+) {
+    CLEAR_DAY("Ясно · день", 0, true, 0),
+    MOSTLY_CLEAR_DAY("Малооблачно · день", 1, true, 25),
+    PARTLY_CLOUDY_DAY("Переменная облачность · день", 2, true, 55),
+    OVERCAST("Пасмурно", 3, true, 90),
+    CLEAR_NIGHT("Ясно · ночь", 0, false, 0),
+    MOSTLY_CLEAR_NIGHT("Малооблачно · ночь", 1, false, 25),
+    PARTLY_CLOUDY_NIGHT("Переменная облачность · ночь", 2, false, 55),
+    FOG("Туман", 45, true, 100),
+    DRIZZLE("Морось", 51, true, 100),
+    RAIN("Дождь", 61, true, 100),
+    SHOWER("Ливень", 80, true, 100),
+    SNOW("Снег", 71, true, 100),
+    THUNDERSTORM("Гроза", 95, true, 100)
+}
+
 data class GlyphSettings(
     val displayMode: DisplayMode = DisplayMode.BOTH,
     val animation: AnimationStyle = AnimationStyle.FADE,
@@ -56,6 +77,16 @@ class GlyphSettingsStore(context: Context) {
             .apply()
     }
 
+    fun loadPreviewPreset(): WeatherAnimationPreset? = prefs.getString(PREVIEW_PRESET, null)?.let { name ->
+        runCatching { enumValueOf<WeatherAnimationPreset>(name) }.getOrNull()
+    }
+
+    fun setPreviewPreset(value: WeatherAnimationPreset?) {
+        prefs.edit().apply {
+            if (value == null) remove(PREVIEW_PRESET) else putString(PREVIEW_PRESET, value.name)
+        }.apply()
+    }
+
     fun registerOnChange(callback: () -> Unit): SharedPreferences.OnSharedPreferenceChangeListener {
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> callback() }
         prefs.registerOnSharedPreferenceChangeListener(listener)
@@ -81,5 +112,6 @@ class GlyphSettingsStore(context: Context) {
         const val ANIMATE_WEATHER = "animate_weather"
         const val WEATHER_INTENSITY = "weather_intensity"
         const val WEATHER_UPDATE_INTERVAL = "weather_update_interval"
+        const val PREVIEW_PRESET = "preview_preset"
     }
 }

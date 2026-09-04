@@ -110,9 +110,11 @@ class WeatherGlyphService : GlyphMatrixService("Weather") {
     private fun startRenderer() {
         val scope = serviceScope ?: return
         val manager = activeManager ?: return
-        val settings = settingsStore?.load() ?: return
+        val store = settingsStore ?: return
+        val settings = store.load()
+        val previewPreset = store.loadPreviewPreset()
         renderJob?.cancel()
-        renderJob = scope.launch { renderLoop(manager, settings, reading) }
+        renderJob = scope.launch { renderLoop(manager, settings, reading, previewPreset) }
     }
 
     private fun startWeatherUpdates(immediate: Boolean) {
@@ -141,9 +143,10 @@ class WeatherGlyphService : GlyphMatrixService("Weather") {
     private suspend fun renderLoop(
         manager: GlyphMatrixManager,
         settings: GlyphSettings,
-        currentReading: WeatherReading?
+        currentReading: WeatherReading?,
+        previewPreset: WeatherAnimationPreset?
     ) {
-        val screens = buildScreens(settings, currentReading)
+        val screens = buildScreens(settings, currentReading, previewPreset)
         val startedAt = SystemClock.elapsedRealtime()
         var index = 0
         var previous = IntArray(GlyphRenderer.SIZE * GlyphRenderer.SIZE)
@@ -161,7 +164,23 @@ class WeatherGlyphService : GlyphMatrixService("Weather") {
         }
     }
 
-    private fun buildScreens(settings: GlyphSettings, currentReading: WeatherReading?): List<Screen> {
+    private fun buildScreens(
+        settings: GlyphSettings,
+        currentReading: WeatherReading?,
+        previewPreset: WeatherAnimationPreset?
+    ): List<Screen> {
+        if (previewPreset != null) return listOf(
+            Screen(
+                GlyphRenderer.condition(
+                    previewPreset.weatherCode,
+                    previewPreset.isDay,
+                    previewPreset.cloudCover
+                ),
+                previewPreset.weatherCode,
+                previewPreset.isDay,
+                previewPreset.cloudCover
+            )
+        )
         if (currentReading == null) return listOf(Screen(GlyphRenderer.temperature(null)))
         return when (settings.displayMode) {
             DisplayMode.BOTH -> listOf(

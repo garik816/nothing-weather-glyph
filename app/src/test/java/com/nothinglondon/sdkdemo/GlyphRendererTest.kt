@@ -2,6 +2,7 @@ package com.nothinglondon.sdkdemo
 
 import com.nothinglondon.sdkdemo.weather.GlyphRenderer
 import com.nothinglondon.sdkdemo.weather.WeatherReading
+import com.nothinglondon.sdkdemo.weather.WeatherAnimationPreset
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -83,5 +84,43 @@ class GlyphRendererTest {
         assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, inner[3 * 13 + 6])
         assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, outer[1 * 13 + 6])
         assertTrue(!inner.contentEquals(outer))
+    }
+
+    @Test
+    fun cloudySunAndMoonAnimationsAlsoMoveFromCenterOutward() {
+        listOf(true, false).forEach { isDay ->
+            listOf(25, 55).forEach { cloudCover ->
+                val inner = GlyphRenderer.animatedCondition(2, 0, 2, isDay, cloudCover)
+                val outer = GlyphRenderer.animatedCondition(2, 1, 2, isDay, cloudCover)
+                assertTrue("$isDay/$cloudCover must animate", !inner.contentEquals(outer))
+            }
+        }
+        val partlyCloudyInner = GlyphRenderer.animatedCondition(2, 0, 2, true, 55)
+        val partlyCloudyOuter = GlyphRenderer.animatedCondition(2, 1, 2, true, 55)
+        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, partlyCloudyInner[3 * 13 + 5])
+        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, partlyCloudyOuter[3 * 13 + 7])
+    }
+
+    @Test
+    fun everyCatalogPresetHasAValidAnimatedPreview() {
+        WeatherAnimationPreset.entries.forEach { preset ->
+            val frames = (0..5).map { phase ->
+                GlyphRenderer.animatedCondition(
+                    preset.weatherCode,
+                    phase,
+                    3,
+                    preset.isDay,
+                    preset.cloudCover
+                )
+            }
+            assertTrue(frames.all { it.size == 169 })
+            assertTrue(frames.all { frame ->
+                frame.all { it in 0..GlyphRenderer.MAX_RAW_BRIGHTNESS }
+            })
+            assertTrue(
+                "${preset.name} must animate",
+                frames.distinctBy { it.contentHashCode() }.size > 1
+            )
+        }
     }
 }

@@ -114,9 +114,17 @@ object GlyphRenderer {
     }
 
     private fun animatedSun(p: IntArray, phase: Int, intensity: Int) {
-        drawDisc(p, 6, 6, 2)
-        val inner = listOf(6 to 3, 9 to 6, 6 to 9, 3 to 6, 4 to 4, 8 to 4, 8 to 8, 4 to 8)
-        val outer = listOf(6 to 1, 11 to 6, 6 to 11, 1 to 6, 3 to 3, 9 to 3, 9 to 9, 3 to 9)
+        animatedSunAt(p, 6, 6, 2, phase, intensity)
+    }
+
+    private fun animatedSunAt(
+        p: IntArray, centerX: Int, centerY: Int, radius: Int, phase: Int, intensity: Int
+    ) {
+        drawDisc(p, centerX, centerY, radius)
+        val innerDistance = radius + 1
+        val outerDistance = radius + 3
+        val inner = radialPoints(centerX, centerY, innerDistance)
+        val outer = radialPoints(centerX, centerY, outerDistance)
         when (phase % 3) {
             0 -> inner.forEach { (x, y) -> set(p, x, y) }
             1 -> {
@@ -134,11 +142,23 @@ object GlyphRenderer {
     }
 
     private fun animatedMoon(p: IntArray, phase: Int, intensity: Int) {
-        drawDisc(p, 6, 6, 3)
-        clearDisc(p, 8, 4, 2)
-        val stars = listOf(2 to 2, 10 to 3, 10 to 9, 3 to 11)
-        stars.forEachIndexed { index, point ->
-            if ((phase + index) % maxOf(2, 5 - intensity) == 0) set(p, point.first, point.second, ON * 2 / 3)
+        animatedMoonAt(p, 6, 6, 3, phase, intensity)
+    }
+
+    private fun animatedMoonAt(
+        p: IntArray, centerX: Int, centerY: Int, radius: Int, phase: Int, intensity: Int
+    ) {
+        drawDisc(p, centerX, centerY, radius)
+        clearDisc(p, centerX + maxOf(1, radius / 2), centerY - maxOf(1, radius / 2), maxOf(1, radius - 1))
+        val inner = radialPoints(centerX, centerY, radius + 1)
+        val outer = radialPoints(centerX, centerY, radius + 3)
+        when (phase % 3) {
+            0 -> inner.forEach { (x, y) -> set(p, x, y, ON * 2 / 3) }
+            1 -> {
+                inner.forEach { (x, y) -> set(p, x, y, if (intensity >= 2) ON / 3 else ON / 4) }
+                outer.forEach { (x, y) -> set(p, x, y, ON * 2 / 3) }
+            }
+            else -> outer.forEach { (x, y) -> set(p, x, y, if (intensity >= 3) ON / 2 else ON / 3) }
         }
     }
 
@@ -174,7 +194,8 @@ object GlyphRenderer {
     }
 
     private fun mostlyClear(p: IntArray, isDay: Boolean, phase: Int = 0, intensity: Int = 2) {
-        if (isDay) animatedSun(p, phase, intensity) else animatedMoon(p, phase, intensity)
+        if (isDay) animatedSunAt(p, 4, 4, 1, phase, intensity)
+        else animatedMoonAt(p, 4, 4, 2, phase, intensity)
         // A small cloud in the lower-right corner; clear pixels behind it first.
         listOf(8 to 8, 9 to 8, 7 to 9, 10 to 9, 7 to 10, 8 to 10, 9 to 10, 10 to 10)
             .forEach { (x, y) -> set(p, x, y) }
@@ -191,20 +212,21 @@ object GlyphRenderer {
     }
 
     private fun partlyCloudy(p: IntArray, phase: Int = 0, isDay: Boolean = true) {
-        val rays = if (phase % 2 == 0) listOf(3 to 1, 1 to 3, 5 to 3) else listOf(1 to 1, 5 to 1, 3 to 4)
-        if (isDay) {
-            drawDisc(p, 3, 3, 1)
-            rays.forEach { (x, y) -> set(p, x, y, ON * 3 / 4) }
-        } else {
-            smallCrescent(p)
-        }
+        if (isDay) animatedSunAt(p, 3, 3, 1, phase, 2)
+        else animatedMoonAt(p, 3, 3, 2, phase, 2)
         cloud(p)
     }
 
-    private fun smallCrescent(p: IntArray) {
-        listOf(2 to 1, 3 to 1, 1 to 2, 1 to 3, 2 to 4, 3 to 4, 4 to 3)
-            .forEach { (x, y) -> set(p, x, y) }
-    }
+    private fun radialPoints(centerX: Int, centerY: Int, distance: Int): List<Pair<Int, Int>> = listOf(
+        centerX to centerY - distance,
+        centerX + distance to centerY,
+        centerX to centerY + distance,
+        centerX - distance to centerY,
+        centerX - distance to centerY - distance,
+        centerX + distance to centerY - distance,
+        centerX + distance to centerY + distance,
+        centerX - distance to centerY + distance
+    )
 
     private fun fog(p: IntArray, phase: Int = 0) {
         cloud(p)

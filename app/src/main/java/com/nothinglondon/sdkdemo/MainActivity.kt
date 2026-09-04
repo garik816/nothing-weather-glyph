@@ -56,6 +56,7 @@ import com.nothinglondon.sdkdemo.weather.GlyphSettingsStore
 import com.nothinglondon.sdkdemo.weather.GlyphRenderer
 import com.nothinglondon.sdkdemo.weather.WeatherReading
 import com.nothinglondon.sdkdemo.weather.WeatherRepository
+import com.nothinglondon.sdkdemo.weather.WeatherAnimationPreset
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
@@ -92,10 +93,19 @@ class MainActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     SettingsScreen(
                         initial = settingsStore.load(),
+                        initialPreviewPreset = settingsStore.loadPreviewPreset(),
                         reading = previewReading,
                         status = status,
                         onRefresh = ::ensurePermissionAndRefresh,
                         onOpenGlyphToys = ::openGlyphToys,
+                        onPreviewOnGlyph = {
+                            settingsStore.setPreviewPreset(it)
+                            status = "На Glyph включён предпросмотр: ${it.title}"
+                        },
+                        onStopGlyphPreview = {
+                            settingsStore.setPreviewPreset(null)
+                            status = "На Glyph снова отображается актуальная погода"
+                        },
                         onSave = { settingsStore.save(it); status = "Настройки сохранены" }
                     )
                 }
@@ -185,13 +195,20 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun SettingsScreen(
     initial: GlyphSettings,
+    initialPreviewPreset: WeatherAnimationPreset?,
     reading: WeatherReading?,
     status: String,
     onRefresh: () -> Unit,
     onOpenGlyphToys: () -> Unit,
+    onPreviewOnGlyph: (WeatherAnimationPreset) -> Unit,
+    onStopGlyphPreview: () -> Unit,
     onSave: (GlyphSettings) -> Unit
 ) {
     var value by remember { mutableStateOf(initial) }
+    var previewPreset by remember {
+        mutableStateOf(initialPreviewPreset ?: WeatherAnimationPreset.CLEAR_DAY)
+    }
+    var glyphPreviewActive by remember { mutableStateOf(initialPreviewPreset != null) }
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -204,6 +221,20 @@ private fun SettingsScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) { GlyphScreensPreview(reading, value) }
         }
+        AnimationCatalog(
+            selected = previewPreset,
+            settings = value,
+            glyphPreviewActive = glyphPreviewActive,
+            onSelect = { previewPreset = it },
+            onPreviewOnGlyph = {
+                glyphPreviewActive = true
+                onPreviewOnGlyph(previewPreset)
+            },
+            onStopGlyphPreview = {
+                glyphPreviewActive = false
+                onStopGlyphPreview()
+            }
+        )
         Button(onClick = onOpenGlyphToys, modifier = Modifier.fillMaxWidth()) {
             Text("ВЫБРАТЬ GLYPH TOY")
         }
@@ -256,6 +287,63 @@ private fun SettingsScreen(
             Text("СОХРАНИТЬ НАСТРОЙКИ")
         }
         Text("Изменения применяются к активному Glyph Toy автоматически.")
+    }
+}
+
+@Composable
+private fun AnimationCatalog(
+    selected: WeatherAnimationPreset,
+    settings: GlyphSettings,
+    glyphPreviewActive: Boolean,
+    onSelect: (WeatherAnimationPreset) -> Unit,
+    onPreviewOnGlyph: () -> Unit,
+    onStopGlyphPreview: () -> Unit
+) {
+    var phase by remember { mutableStateOf(0) }
+    LaunchedEffect(settings.animationStepMs, selected) {
+        phase = 0
+        while (true) {
+            delay(settings.animationStepMs.coerceAtLeast(40))
+            phase++
+        }
+    }
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text("КАТАЛОГ АНИМАЦИЙ", style = MaterialTheme.typography.titleLarge)
+            EnumSelector("Погодная сцена", selected, WeatherAnimationPreset.entries, onSelect)
+            GlyphPreviewCard(
+                selected.title,
+                GlyphRenderer.animatedCondition(
+                    selected.weatherCode,
+                    phase,
+                    settings.weatherIntensity,
+                    selected.isDay,
+                    selected.cloudCover
+                ),
+                settings.brightness,
+                Modifier.fillMaxWidth()
+            )
+            Button(onClick = onPreviewOnGlyph, modifier = Modifier.fillMaxWidth()) {
+                Text("ПОКАЗАТЬ НА GLYPH")
+            }
+            if (glyphPreviewActive) {
+                OutlinedButton(onClick = onStopGlyphPreview, modifier = Modifier.fillMaxWidth()) {
+                    Text("ВЕРНУТЬ АКТУАЛЬНУЮ ПОГОДУ")
+                }
+                Text(
+                    "Тестовая сцена активна на выбранном Glyph Toy.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                Text(
+                    "Для аппаратного предпросмотра Weather должен быть выбран как Glyph Toy.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
 
@@ -344,6 +432,7 @@ private fun <T> EnumSelector(label: String, selected: T, values: List<T>, onSele
             Text(when (selected) {
                 is DisplayMode -> selected.title
                 is AnimationStyle -> selected.title
+                is WeatherAnimationPreset -> selected.title
                 else -> selected.name
             })
         }
@@ -353,6 +442,7 @@ private fun <T> EnumSelector(label: String, selected: T, values: List<T>, onSele
                     text = { Text(when (item) {
                         is DisplayMode -> item.title
                         is AnimationStyle -> item.title
+                        is WeatherAnimationPreset -> item.title
                         else -> item.name
                     }) },
                     onClick = { onSelect(item); expanded = false }
