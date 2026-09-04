@@ -50,6 +50,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.nothinglondon.sdkdemo.ui.theme.NothingAndroidSDKDemoTheme
 import com.nothinglondon.sdkdemo.weather.AnimationStyle
+import com.nothinglondon.sdkdemo.weather.CloudThresholds
 import com.nothinglondon.sdkdemo.weather.DisplayMode
 import com.nothinglondon.sdkdemo.weather.GlyphSettings
 import com.nothinglondon.sdkdemo.weather.GlyphSettingsStore
@@ -266,6 +267,9 @@ private fun SettingsScreen(
                 }, value.weatherIntensity.toFloat(), 1f..3f, 1
             ) { value = value.copy(weatherIntensity = it.roundToInt().coerceIn(1, 3)) }
         }
+        CloudThresholdSettings(value.cloudThresholds) {
+            value = value.copy(cloudThresholds = it)
+        }
         WeatherUpdateSelector(value.weatherUpdateIntervalMs) {
             value = value.copy(weatherUpdateIntervalMs = it)
         }
@@ -288,6 +292,43 @@ private fun SettingsScreen(
         }
         Text("Изменения применяются к активному Glyph Toy автоматически.")
     }
+}
+
+@Composable
+private fun CloudThresholdSettings(
+    thresholds: CloudThresholds,
+    onChange: (CloudThresholds) -> Unit
+) {
+    val value = thresholds.normalized()
+    Text("ПОРОГИ ОБЛАЧНОСТИ", style = MaterialTheme.typography.titleLarge)
+    Text(
+        "Анимация выбирается по фактическому проценту облачности.",
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+    SettingSlider(
+        "Ясно до", "${value.clearMax}%", value.clearMax.toFloat(),
+        0f..(value.mostlyClearMax - 1).toFloat(), 0
+    ) { newValue ->
+        onChange(value.copy(clearMax = newValue.roundToInt()).normalized())
+    }
+    SettingSlider(
+        "Малооблачно до", "${value.mostlyClearMax}%", value.mostlyClearMax.toFloat(),
+        (value.clearMax + 1).toFloat()..(value.partlyCloudyMax - 1).toFloat(), 0
+    ) { newValue ->
+        onChange(value.copy(mostlyClearMax = newValue.roundToInt()).normalized())
+    }
+    SettingSlider(
+        "Переменная облачность до", "${value.partlyCloudyMax}%",
+        value.partlyCloudyMax.toFloat(), (value.mostlyClearMax + 1).toFloat()..99f, 0
+    ) { newValue ->
+        onChange(value.copy(partlyCloudyMax = newValue.roundToInt()).normalized())
+    }
+    Text(
+        "0–${value.clearMax}% ясно · ${value.clearMax + 1}–${value.mostlyClearMax}% малооблачно · " +
+            "${value.mostlyClearMax + 1}–${value.partlyCloudyMax}% переменная · " +
+            "${value.partlyCloudyMax + 1}–100% пасмурно",
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 }
 
 @Composable
@@ -321,7 +362,8 @@ private fun AnimationCatalog(
                     phase,
                     settings.weatherIntensity,
                     selected.isDay,
-                    selected.cloudCover
+                    selected.cloudCover,
+                    settings.cloudThresholds
                 ),
                 settings.brightness,
                 Modifier.fillMaxWidth()
@@ -364,9 +406,15 @@ private fun GlyphScreensPreview(reading: WeatherReading?, settings: GlyphSetting
                 phase,
                 settings.weatherIntensity,
                 reading.isDay,
-                reading.cloudCover
+                reading.cloudCover,
+                settings.cloudThresholds
             )
-        } else GlyphRenderer.condition(reading.weatherCode, reading.isDay, reading.cloudCover)
+        } else GlyphRenderer.condition(
+            reading.weatherCode,
+            reading.isDay,
+            reading.cloudCover,
+            settings.cloudThresholds
+        )
     }
     val temperature = GlyphRenderer.temperature(reading)
     Text("Экраны Glyph", style = MaterialTheme.typography.titleLarge)

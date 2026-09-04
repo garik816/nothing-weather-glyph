@@ -17,19 +17,32 @@ enum class WeatherAnimationPreset(
     val isDay: Boolean,
     val cloudCover: Int
 ) {
-    CLEAR_DAY("Ясно · день", 0, true, 0),
-    MOSTLY_CLEAR_DAY("Малооблачно · день", 1, true, 25),
-    PARTLY_CLOUDY_DAY("Переменная облачность · день", 2, true, 55),
-    OVERCAST("Пасмурно", 3, true, 90),
-    CLEAR_NIGHT("Ясно · ночь", 0, false, 0),
-    MOSTLY_CLEAR_NIGHT("Малооблачно · ночь", 1, false, 25),
-    PARTLY_CLOUDY_NIGHT("Переменная облачность · ночь", 2, false, 55),
+    CLEAR_DAY("Ясно · день", 0, true, -1),
+    MOSTLY_CLEAR_DAY("Малооблачно · день", 1, true, -1),
+    PARTLY_CLOUDY_DAY("Переменная облачность · день", 2, true, -1),
+    OVERCAST("Пасмурно", 3, true, -1),
+    CLEAR_NIGHT("Ясно · ночь", 0, false, -1),
+    MOSTLY_CLEAR_NIGHT("Малооблачно · ночь", 1, false, -1),
+    PARTLY_CLOUDY_NIGHT("Переменная облачность · ночь", 2, false, -1),
     FOG("Туман", 45, true, 100),
     DRIZZLE("Морось", 51, true, 100),
     RAIN("Дождь", 61, true, 100),
     SHOWER("Ливень", 80, true, 100),
     SNOW("Снег", 71, true, 100),
     THUNDERSTORM("Гроза", 95, true, 100)
+}
+
+data class CloudThresholds(
+    val clearMax: Int = 15,
+    val mostlyClearMax: Int = 35,
+    val partlyCloudyMax: Int = 75
+) {
+    fun normalized(): CloudThresholds {
+        val clear = clearMax.coerceIn(0, 97)
+        val mostlyClear = mostlyClearMax.coerceIn(clear + 1, 98)
+        val partlyCloudy = partlyCloudyMax.coerceIn(mostlyClear + 1, 99)
+        return CloudThresholds(clear, mostlyClear, partlyCloudy)
+    }
 }
 
 data class GlyphSettings(
@@ -42,25 +55,34 @@ data class GlyphSettings(
     val repeatForever: Boolean = true,
     val animateWeather: Boolean = true,
     val weatherIntensity: Int = 2,
-    val weatherUpdateIntervalMs: Long = 15 * 60_000L
+    val weatherUpdateIntervalMs: Long = 15 * 60_000L,
+    val cloudThresholds: CloudThresholds = CloudThresholds()
 )
 
 class GlyphSettingsStore(context: Context) {
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-    fun load() = GlyphSettings(
-        displayMode = enumValueOrDefault(prefs.getString(MODE, null), DisplayMode.BOTH),
-        animation = enumValueOrDefault(prefs.getString(ANIMATION, null), AnimationStyle.FADE),
-        brightness = prefs.getInt(BRIGHTNESS, 80).coerceIn(10, 100),
-        screenDurationMs = prefs.getLong(SCREEN_DURATION, 2_500).coerceIn(1_000, 10_000),
-        animationStepMs = prefs.getLong(ANIMATION_STEP, 100).coerceIn(40, 400),
-        timeoutMs = prefs.getLong(TIMEOUT, 60_000).coerceAtLeast(0),
-        repeatForever = prefs.getBoolean(REPEAT_FOREVER, true),
-        animateWeather = prefs.getBoolean(ANIMATE_WEATHER, true),
-        weatherIntensity = prefs.getInt(WEATHER_INTENSITY, 2).coerceIn(1, 3),
-        weatherUpdateIntervalMs = prefs.getLong(WEATHER_UPDATE_INTERVAL, 15 * 60_000L)
-            .coerceIn(5 * 60_000L, 180 * 60_000L)
-    )
+    fun load(): GlyphSettings {
+        val cloudThresholds = CloudThresholds(
+            clearMax = prefs.getInt(CLOUD_CLEAR_MAX, 15),
+            mostlyClearMax = prefs.getInt(CLOUD_MOSTLY_CLEAR_MAX, 35),
+            partlyCloudyMax = prefs.getInt(CLOUD_PARTLY_CLOUDY_MAX, 75)
+        ).normalized()
+        return GlyphSettings(
+            displayMode = enumValueOrDefault(prefs.getString(MODE, null), DisplayMode.BOTH),
+            animation = enumValueOrDefault(prefs.getString(ANIMATION, null), AnimationStyle.FADE),
+            brightness = prefs.getInt(BRIGHTNESS, 80).coerceIn(10, 100),
+            screenDurationMs = prefs.getLong(SCREEN_DURATION, 2_500).coerceIn(1_000, 10_000),
+            animationStepMs = prefs.getLong(ANIMATION_STEP, 100).coerceIn(40, 400),
+            timeoutMs = prefs.getLong(TIMEOUT, 60_000).coerceAtLeast(0),
+            repeatForever = prefs.getBoolean(REPEAT_FOREVER, true),
+            animateWeather = prefs.getBoolean(ANIMATE_WEATHER, true),
+            weatherIntensity = prefs.getInt(WEATHER_INTENSITY, 2).coerceIn(1, 3),
+            weatherUpdateIntervalMs = prefs.getLong(WEATHER_UPDATE_INTERVAL, 15 * 60_000L)
+                .coerceIn(5 * 60_000L, 180 * 60_000L),
+            cloudThresholds = cloudThresholds
+        )
+    }
 
     fun save(value: GlyphSettings) {
         prefs.edit()
@@ -74,6 +96,9 @@ class GlyphSettingsStore(context: Context) {
             .putBoolean(ANIMATE_WEATHER, value.animateWeather)
             .putInt(WEATHER_INTENSITY, value.weatherIntensity)
             .putLong(WEATHER_UPDATE_INTERVAL, value.weatherUpdateIntervalMs)
+            .putInt(CLOUD_CLEAR_MAX, value.cloudThresholds.clearMax)
+            .putInt(CLOUD_MOSTLY_CLEAR_MAX, value.cloudThresholds.mostlyClearMax)
+            .putInt(CLOUD_PARTLY_CLOUDY_MAX, value.cloudThresholds.partlyCloudyMax)
             .apply()
     }
 
@@ -113,5 +138,8 @@ class GlyphSettingsStore(context: Context) {
         const val WEATHER_INTENSITY = "weather_intensity"
         const val WEATHER_UPDATE_INTERVAL = "weather_update_interval"
         const val PREVIEW_PRESET = "preview_preset"
+        const val CLOUD_CLEAR_MAX = "cloud_clear_max"
+        const val CLOUD_MOSTLY_CLEAR_MAX = "cloud_mostly_clear_max"
+        const val CLOUD_PARTLY_CLOUDY_MAX = "cloud_partly_cloudy_max"
     }
 }

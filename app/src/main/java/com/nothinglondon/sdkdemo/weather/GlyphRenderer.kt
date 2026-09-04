@@ -38,9 +38,14 @@ object GlyphRenderer {
         return pixels
     }
 
-    fun condition(code: Int, isDay: Boolean = true, cloudCover: Int = -1): IntArray = IntArray(SIZE * SIZE).also { pixels ->
+    fun condition(
+        code: Int,
+        isDay: Boolean = true,
+        cloudCover: Int = -1,
+        cloudThresholds: CloudThresholds = CloudThresholds()
+    ): IntArray = IntArray(SIZE * SIZE).also { pixels ->
         when (code) {
-            in 0..3 -> skyByCloudCover(pixels, code, isDay, cloudCover)
+            in 0..3 -> skyByCloudCover(pixels, code, isDay, cloudCover, cloudThresholds)
             45, 48 -> fog(pixels)
             in 51..57 -> { cloud(pixels); drizzle(pixels) }
             in 61..67, in 80..82 -> { cloud(pixels); rain(pixels) }
@@ -55,12 +60,15 @@ object GlyphRenderer {
         phase: Int,
         intensity: Int,
         isDay: Boolean = true,
-        cloudCover: Int = -1
+        cloudCover: Int = -1,
+        cloudThresholds: CloudThresholds = CloudThresholds()
     ): IntArray =
         IntArray(SIZE * SIZE).also { pixels ->
             val p = phase.coerceAtLeast(0)
             when (code) {
-                in 0..3 -> animatedSkyByCloudCover(pixels, code, isDay, cloudCover, p, intensity)
+                in 0..3 -> animatedSkyByCloudCover(
+                    pixels, code, isDay, cloudCover, p, intensity, cloudThresholds
+                )
                 45, 48 -> fog(pixels, p)
                 in 51..57 -> { cloud(pixels); drizzle(pixels, p) }
                 in 51..67, in 80..82 -> {
@@ -162,8 +170,14 @@ object GlyphRenderer {
         }
     }
 
-    private fun skyByCloudCover(p: IntArray, code: Int, isDay: Boolean, cloudCover: Int) {
-        when (cloudLevel(code, cloudCover)) {
+    private fun skyByCloudCover(
+        p: IntArray,
+        code: Int,
+        isDay: Boolean,
+        cloudCover: Int,
+        cloudThresholds: CloudThresholds
+    ) {
+        when (cloudLevel(code, cloudCover, cloudThresholds)) {
             0 -> if (isDay) sun(p) else moon(p)
             1 -> mostlyClear(p, isDay)
             2 -> partlyCloudy(p, isDay = isDay)
@@ -172,9 +186,15 @@ object GlyphRenderer {
     }
 
     private fun animatedSkyByCloudCover(
-        p: IntArray, code: Int, isDay: Boolean, cloudCover: Int, phase: Int, intensity: Int
+        p: IntArray,
+        code: Int,
+        isDay: Boolean,
+        cloudCover: Int,
+        phase: Int,
+        intensity: Int,
+        cloudThresholds: CloudThresholds
     ) {
-        when (cloudLevel(code, cloudCover)) {
+        when (cloudLevel(code, cloudCover, cloudThresholds)) {
             0 -> if (isDay) animatedSun(p, phase, intensity) else animatedMoon(p, phase, intensity)
             1 -> mostlyClear(p, isDay, phase, intensity)
             2 -> partlyCloudy(p, phase, isDay)
@@ -182,11 +202,15 @@ object GlyphRenderer {
         }
     }
 
-    internal fun cloudLevel(code: Int, cloudCover: Int): Int = when {
-        cloudCover in 0..15 -> 0
-        cloudCover in 16..35 -> 1
-        cloudCover in 36..75 -> 2
-        cloudCover in 76..100 -> 3
+    internal fun cloudLevel(
+        code: Int,
+        cloudCover: Int,
+        cloudThresholds: CloudThresholds = CloudThresholds()
+    ): Int = when {
+        cloudCover in 0..cloudThresholds.clearMax -> 0
+        cloudCover in (cloudThresholds.clearMax + 1)..cloudThresholds.mostlyClearMax -> 1
+        cloudCover in (cloudThresholds.mostlyClearMax + 1)..cloudThresholds.partlyCloudyMax -> 2
+        cloudCover in (cloudThresholds.partlyCloudyMax + 1)..100 -> 3
         code == 0 -> 0
         code == 1 -> 1
         code == 2 -> 2

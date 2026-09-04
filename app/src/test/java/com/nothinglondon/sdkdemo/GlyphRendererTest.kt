@@ -1,6 +1,7 @@
 package com.nothinglondon.sdkdemo
 
 import com.nothinglondon.sdkdemo.weather.GlyphRenderer
+import com.nothinglondon.sdkdemo.weather.CloudThresholds
 import com.nothinglondon.sdkdemo.weather.WeatherReading
 import com.nothinglondon.sdkdemo.weather.WeatherAnimationPreset
 import org.junit.Assert.assertEquals
@@ -75,6 +76,25 @@ class GlyphRendererTest {
         assertTrue(!GlyphRenderer.condition(1, true, 5).contentEquals(
             GlyphRenderer.condition(1, true, 55)
         ))
+    }
+
+    @Test
+    fun customCloudThresholdsSelectExpectedAnimationBands() {
+        val thresholds = CloudThresholds(clearMax = 10, mostlyClearMax = 30, partlyCloudyMax = 60)
+        assertEquals(0, GlyphRenderer.cloudLevel(3, 10, thresholds))
+        assertEquals(1, GlyphRenderer.cloudLevel(0, 11, thresholds))
+        assertEquals(1, GlyphRenderer.cloudLevel(0, 30, thresholds))
+        assertEquals(2, GlyphRenderer.cloudLevel(0, 31, thresholds))
+        assertEquals(2, GlyphRenderer.cloudLevel(0, 60, thresholds))
+        assertEquals(3, GlyphRenderer.cloudLevel(0, 61, thresholds))
+    }
+
+    @Test
+    fun invalidCloudThresholdsAreNormalizedInAscendingOrder() {
+        assertEquals(
+            CloudThresholds(97, 98, 99),
+            CloudThresholds(100, 10, 5).normalized()
+        )
     }
 
     @Test

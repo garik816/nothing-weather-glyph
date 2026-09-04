@@ -174,7 +174,8 @@ class WeatherGlyphService : GlyphMatrixService("Weather") {
                 GlyphRenderer.condition(
                     previewPreset.weatherCode,
                     previewPreset.isDay,
-                    previewPreset.cloudCover
+                    previewPreset.cloudCover,
+                    settings.cloudThresholds
                 ),
                 previewPreset.weatherCode,
                 previewPreset.isDay,
@@ -186,7 +187,10 @@ class WeatherGlyphService : GlyphMatrixService("Weather") {
             DisplayMode.BOTH -> listOf(
                 Screen(
                     GlyphRenderer.condition(
-                        currentReading.weatherCode, currentReading.isDay, currentReading.cloudCover
+                        currentReading.weatherCode,
+                        currentReading.isDay,
+                        currentReading.cloudCover,
+                        settings.cloudThresholds
                     ),
                     currentReading.weatherCode,
                     currentReading.isDay,
@@ -198,7 +202,10 @@ class WeatherGlyphService : GlyphMatrixService("Weather") {
             DisplayMode.CONDITION -> listOf(
                 Screen(
                     GlyphRenderer.condition(
-                        currentReading.weatherCode, currentReading.isDay, currentReading.cloudCover
+                        currentReading.weatherCode,
+                        currentReading.isDay,
+                        currentReading.cloudCover,
+                        settings.cloudThresholds
                     ),
                     currentReading.weatherCode,
                     currentReading.isDay,
@@ -228,7 +235,8 @@ class WeatherGlyphService : GlyphMatrixService("Weather") {
                     phase++,
                     settings.weatherIntensity,
                     screen.isDay,
-                    screen.cloudCover
+                    screen.cloudCover,
+                    settings.cloudThresholds
                 )
                 withContext(Dispatchers.Main) {
                     manager.setMatrixFrame(GlyphRenderer.brightness(frame, settings.brightness))
