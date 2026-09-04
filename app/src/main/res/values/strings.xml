@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Weather Glyph</string>
+    <string name="weather_toy_name">Weather</string>
+    <string name="weather_toy_summary">Current weather and temperature</string>
+
+    <string name="toy_name_basic">Basic Demo</string>
+    <string name="toy_summary_basic">Displays a basic image on the matrix.</string>
+
+    <string name="toy_name_animation">Animation Demo</string>
+    <string name="toy_summary_animation">Animates the glyph matrix.</string>
+
+    <string name="toy_name_glyph_button">Glyph Button Demo</string>
+    <string name="toy_summary_glyph_button">Activates the glyph matrix when the glyph button is pressed.</string>
+</resources>
