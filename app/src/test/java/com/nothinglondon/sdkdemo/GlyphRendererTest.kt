@@ -2,6 +2,7 @@ package com.nothinglondon.sdkdemo
 
 import com.nothinglondon.sdkdemo.weather.GlyphRenderer
 import com.nothinglondon.sdkdemo.weather.CloudThresholds
+import com.nothinglondon.sdkdemo.weather.CustomGlyphAnimation
 import com.nothinglondon.sdkdemo.weather.WeatherReading
 import com.nothinglondon.sdkdemo.weather.WeatherAnimationPreset
 import org.junit.Assert.assertEquals
@@ -95,6 +96,28 @@ class GlyphRendererTest {
             CloudThresholds(97, 98, 99),
             CloudThresholds(100, 10, 5).normalized()
         )
+    }
+
+    @Test
+    fun customAnimationNormalizesFramesTimingAndPixels() {
+        val animation = CustomGlyphAnimation(
+            name = "  Test  ",
+            frameDurationMs = 1L,
+            frames = listOf(intArrayOf(-1, 1, 7))
+        ).normalized()
+        assertEquals("Test", animation.name)
+        assertEquals(40L, animation.frameDurationMs)
+        assertEquals(CustomGlyphAnimation.FRAME_SIZE, animation.frames.single().size)
+        assertEquals(0, animation.frames.single()[0])
+        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, animation.frames.single()[1])
+        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, animation.frames.single()[2])
+    }
+
+    @Test
+    fun customAnimationAlwaysContainsAtLeastOneFrame() {
+        val animation = CustomGlyphAnimation(frames = emptyList()).normalized()
+        assertEquals(1, animation.frames.size)
+        assertTrue(animation.frames.single().all { it == 0 })
     }
 
     @Test

@@ -113,8 +113,11 @@ class WeatherGlyphService : GlyphMatrixService("Weather") {
         val store = settingsStore ?: return
         val settings = store.load()
         val previewPreset = store.loadPreviewPreset()
+        val customPreview = store.loadCustomPreview()
         renderJob?.cancel()
-        renderJob = scope.launch { renderLoop(manager, settings, reading, previewPreset) }
+        renderJob = scope.launch {
+            renderLoop(manager, settings, reading, previewPreset, customPreview)
+        }
     }
 
     private fun startWeatherUpdates(immediate: Boolean) {
@@ -144,8 +147,13 @@ class WeatherGlyphService : GlyphMatrixService("Weather") {
         manager: GlyphMatrixManager,
         settings: GlyphSettings,
         currentReading: WeatherReading?,
-        previewPreset: WeatherAnimationPreset?
+        previewPreset: WeatherAnimationPreset?,
+        customPreview: CustomGlyphAnimation?
     ) {
+        if (customPreview != null) {
+            renderCustomAnimation(manager, settings, customPreview)
+            return
+        }
         val screens = buildScreens(settings, currentReading, previewPreset)
         val startedAt = SystemClock.elapsedRealtime()
         var index = 0
@@ -161,6 +169,21 @@ class WeatherGlyphService : GlyphMatrixService("Weather") {
 
         if (currentCoroutineContext().isActive && activeManager === manager) {
             withContext(Dispatchers.Main) { manager.turnOff() }
+        }
+    }
+
+    private suspend fun renderCustomAnimation(
+        manager: GlyphMatrixManager,
+        settings: GlyphSettings,
+        animation: CustomGlyphAnimation
+    ) {
+        val safe = animation.normalized()
+        var frameIndex = 0
+        while (currentCoroutineContext().isActive) {
+            val frame = GlyphRenderer.brightness(safe.frames[frameIndex], settings.brightness)
+            withContext(Dispatchers.Main) { manager.setMatrixFrame(frame) }
+            frameIndex = (frameIndex + 1) % safe.frames.size
+            delay(safe.frameDurationMs)
         }
     }
 

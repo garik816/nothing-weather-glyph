@@ -106,10 +106,27 @@ class GlyphSettingsStore(context: Context) {
         runCatching { enumValueOf<WeatherAnimationPreset>(name) }.getOrNull()
     }
 
+    fun loadCustomPreview(): CustomGlyphAnimation? =
+        CustomGlyphAnimationStore.decode(prefs.getString(CUSTOM_PREVIEW, null))
+
+    fun hasPreview(): Boolean = loadPreviewPreset() != null || loadCustomPreview() != null
+
     fun setPreviewPreset(value: WeatherAnimationPreset?) {
         prefs.edit().apply {
+            remove(CUSTOM_PREVIEW)
             if (value == null) remove(PREVIEW_PRESET) else putString(PREVIEW_PRESET, value.name)
         }.apply()
+    }
+
+    fun setCustomPreview(value: CustomGlyphAnimation) {
+        prefs.edit()
+            .remove(PREVIEW_PRESET)
+            .putString(CUSTOM_PREVIEW, CustomGlyphAnimationStore.encode(value.normalized()))
+            .apply()
+    }
+
+    fun clearPreview() {
+        prefs.edit().remove(PREVIEW_PRESET).remove(CUSTOM_PREVIEW).apply()
     }
 
     fun registerOnChange(callback: () -> Unit): SharedPreferences.OnSharedPreferenceChangeListener {
@@ -138,6 +155,7 @@ class GlyphSettingsStore(context: Context) {
         const val WEATHER_INTENSITY = "weather_intensity"
         const val WEATHER_UPDATE_INTERVAL = "weather_update_interval"
         const val PREVIEW_PRESET = "preview_preset"
+        const val CUSTOM_PREVIEW = "custom_preview"
         const val CLOUD_CLEAR_MAX = "cloud_clear_max"
         const val CLOUD_MOSTLY_CLEAR_MAX = "cloud_mostly_clear_max"
         const val CLOUD_PARTLY_CLOUDY_MAX = "cloud_partly_cloudy_max"
