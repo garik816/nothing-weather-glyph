@@ -220,19 +220,30 @@ object GlyphRenderer {
     private fun mostlyClear(p: IntArray, isDay: Boolean, phase: Int = 0, intensity: Int = 2) {
         if (isDay) animatedSunAt(p, 4, 4, 1, phase, intensity)
         else animatedMoonAt(p, 4, 4, 2, phase, intensity)
-        // A small cloud in the lower-right corner; clear pixels behind it first.
-        listOf(8 to 8, 9 to 8, 7 to 9, 10 to 9, 7 to 10, 8 to 10, 9 to 10, 10 to 10)
-            .forEach { (x, y) -> set(p, x, y) }
+        smallDoubleCloud(p)
     }
 
     private fun cloud(p: IntArray, offset: Int = 0) {
-        // Thin rounded contour leaves visual space for precipitation below.
-        for (x in 5..7) set(p, x + offset, 4)
-        set(p, 4 + offset, 5); set(p, 8 + offset, 5)
-        set(p, 3 + offset, 6); set(p, 9 + offset, 6)
-        set(p, 2 + offset, 7); set(p, 10 + offset, 7)
-        set(p, 2 + offset, 8); set(p, 10 + offset, 8)
+        // Filled two-dome silhouette matching the dotted Nothing weather icon:
+        // a lower left lobe and a taller right lobe joined into one cloud.
+        // Row 9 is the bottom so rows 10..12 stay free for precipitation.
+        for (x in 7..8) set(p, x + offset, 2)
+        for (x in 3..5) set(p, x + offset, 3)
+        for (x in 7..9) set(p, x + offset, 3)
+        for (x in 2..10) set(p, x + offset, 4)
+        for (x in 1..11) set(p, x + offset, 5)
+        for (x in 1..11) set(p, x + offset, 6)
+        for (x in 1..11) set(p, x + offset, 7)
+        for (x in 2..10) set(p, x + offset, 8)
         for (x in 3..9) set(p, x + offset, 9)
+    }
+
+    private fun smallDoubleCloud(p: IntArray) {
+        set(p, 9, 7)
+        for (x in 7..8) set(p, x, 8)
+        for (x in 10..11) set(p, x, 8)
+        for (x in 6..11) set(p, x, 9)
+        for (x in 7..10) set(p, x, 10)
     }
 
     private fun partlyCloudy(p: IntArray, phase: Int = 0, isDay: Boolean = true) {

@@ -121,6 +121,35 @@ class GlyphRendererTest {
     }
 
     @Test
+    fun cloudUsesFilledDoubleDomeAndKeepsPrecipitationSpace() {
+        val frame = GlyphRenderer.condition(3, cloudCover = 100)
+        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, frame[2 * 13 + 7])
+        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, frame[3 * 13 + 4])
+        assertEquals(0, frame[3 * 13 + 6])
+        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, frame[6 * 13 + 6])
+        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, frame[9 * 13 + 5])
+        assertEquals(0, frame[10 * 13 + 5])
+    }
+
+    @Test
+    fun everyCloudWeatherTypeUsesTheNewDoubleDomeSilhouette() {
+        listOf(3, 45, 51, 61, 71, 80, 95).forEach { code ->
+            val frame = GlyphRenderer.condition(code, cloudCover = 100)
+            assertEquals("code $code rear dome", GlyphRenderer.MAX_RAW_BRIGHTNESS, frame[2 * 13 + 7])
+            assertEquals("code $code front dome", GlyphRenderer.MAX_RAW_BRIGHTNESS, frame[3 * 13 + 4])
+            assertEquals("code $code filled body", GlyphRenderer.MAX_RAW_BRIGHTNESS, frame[6 * 13 + 6])
+        }
+
+        val partlyCloudy = GlyphRenderer.condition(2, isDay = true, cloudCover = 55)
+        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, partlyCloudy[2 * 13 + 7])
+
+        val mostlyClear = GlyphRenderer.condition(1, isDay = true, cloudCover = 25)
+        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, mostlyClear[7 * 13 + 9])
+        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, mostlyClear[8 * 13 + 7])
+        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, mostlyClear[8 * 13 + 10])
+    }
+
+    @Test
     fun sunPulseMovesFromInnerToOuterRays() {
         val inner = GlyphRenderer.animatedCondition(0, 0, 2, true, 0)
         val outer = GlyphRenderer.animatedCondition(0, 1, 2, true, 0)
