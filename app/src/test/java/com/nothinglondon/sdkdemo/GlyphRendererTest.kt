@@ -123,9 +123,9 @@ class GlyphRendererTest {
     @Test
     fun cloudUsesFilledDoubleDomeAndKeepsPrecipitationSpace() {
         val frame = GlyphRenderer.condition(3, cloudCover = 100)
-        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, frame[2 * 13 + 7])
-        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, frame[3 * 13 + 4])
-        assertEquals(0, frame[3 * 13 + 6])
+        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, frame[1 * 13 + 8])
+        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, frame[4 * 13 + 3])
+        assertEquals(0, frame[4 * 13 + 5])
         assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, frame[6 * 13 + 6])
         assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, frame[9 * 13 + 5])
         assertEquals(0, frame[10 * 13 + 5])
@@ -135,17 +135,17 @@ class GlyphRendererTest {
     fun everyCloudWeatherTypeUsesTheNewDoubleDomeSilhouette() {
         listOf(3, 45, 51, 61, 71, 80, 95).forEach { code ->
             val frame = GlyphRenderer.condition(code, cloudCover = 100)
-            assertEquals("code $code rear dome", GlyphRenderer.MAX_RAW_BRIGHTNESS, frame[2 * 13 + 7])
-            assertEquals("code $code front dome", GlyphRenderer.MAX_RAW_BRIGHTNESS, frame[3 * 13 + 4])
+            assertEquals("code $code large dome", GlyphRenderer.MAX_RAW_BRIGHTNESS, frame[1 * 13 + 8])
+            assertEquals("code $code small dome", GlyphRenderer.MAX_RAW_BRIGHTNESS, frame[4 * 13 + 3])
             assertEquals("code $code filled body", GlyphRenderer.MAX_RAW_BRIGHTNESS, frame[6 * 13 + 6])
         }
 
         val partlyCloudy = GlyphRenderer.condition(2, isDay = true, cloudCover = 55)
-        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, partlyCloudy[2 * 13 + 7])
+        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, partlyCloudy[1 * 13 + 8])
 
         val mostlyClear = GlyphRenderer.condition(1, isDay = true, cloudCover = 25)
-        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, mostlyClear[7 * 13 + 9])
-        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, mostlyClear[8 * 13 + 7])
+        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, mostlyClear[6 * 13 + 9])
+        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, mostlyClear[8 * 13 + 6])
         assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, mostlyClear[8 * 13 + 10])
     }
 
@@ -169,8 +169,8 @@ class GlyphRendererTest {
         }
         val partlyCloudyInner = GlyphRenderer.animatedCondition(2, 0, 2, true, 55)
         val partlyCloudyOuter = GlyphRenderer.animatedCondition(2, 1, 2, true, 55)
-        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, partlyCloudyInner[3 * 13 + 5])
-        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, partlyCloudyOuter[3 * 13 + 7])
+        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, partlyCloudyInner[3 * 13 + 2])
+        assertEquals(GlyphRenderer.MAX_RAW_BRIGHTNESS, partlyCloudyOuter[3 * 13])
     }
 
     @Test

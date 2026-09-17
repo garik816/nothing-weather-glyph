@@ -12,8 +12,8 @@ android {
         applicationId = "com.nothing.weatherglyph"
         minSdk = 34
         targetSdk = 34
-        versionCode = 19
-        versionName = "0.10.1"
+        versionCode = 20
+        versionName = "0.10.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

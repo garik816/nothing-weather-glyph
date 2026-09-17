@@ -227,11 +227,12 @@ object GlyphRenderer {
         // Filled two-dome silhouette matching the dotted Nothing weather icon:
         // a lower left lobe and a taller right lobe joined into one cloud.
         // Row 9 is the bottom so rows 10..12 stay free for precipitation.
-        for (x in 7..8) set(p, x + offset, 2)
-        for (x in 3..5) set(p, x + offset, 3)
-        for (x in 7..9) set(p, x + offset, 3)
-        for (x in 2..10) set(p, x + offset, 4)
-        for (x in 1..11) set(p, x + offset, 5)
+        for (x in 7..9) set(p, x + offset, 1)
+        for (x in 6..10) set(p, x + offset, 2)
+        for (x in 5..11) set(p, x + offset, 3)
+        for (x in 3..4) set(p, x + offset, 4)
+        for (x in 6..11) set(p, x + offset, 4)
+        for (x in 2..11) set(p, x + offset, 5)
         for (x in 1..11) set(p, x + offset, 6)
         for (x in 1..11) set(p, x + offset, 7)
         for (x in 2..10) set(p, x + offset, 8)
@@ -239,16 +240,17 @@ object GlyphRenderer {
     }
 
     private fun smallDoubleCloud(p: IntArray) {
-        set(p, 9, 7)
-        for (x in 7..8) set(p, x, 8)
-        for (x in 10..11) set(p, x, 8)
-        for (x in 6..11) set(p, x, 9)
-        for (x in 7..10) set(p, x, 10)
+        for (x in 9..10) set(p, x, 6)
+        for (x in 8..11) set(p, x, 7)
+        set(p, 6, 8)
+        for (x in 8..11) set(p, x, 8)
+        for (x in 5..11) set(p, x, 9)
+        for (x in 6..10) set(p, x, 10)
     }
 
     private fun partlyCloudy(p: IntArray, phase: Int = 0, isDay: Boolean = true) {
-        if (isDay) animatedSunAt(p, 3, 3, 1, phase, 2)
-        else animatedMoonAt(p, 3, 3, 2, phase, 2)
+        if (isDay) animatedSunAt(p, 4, 3, 1, phase, 2)
+        else animatedMoonAt(p, 5, 3, 2, phase, 2)
         cloud(p)
     }
 
